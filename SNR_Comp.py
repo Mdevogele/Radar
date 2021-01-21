@@ -52,7 +52,7 @@ System = {'AO leg': {'Tsys'     : 23,
 
 
 
-def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a=False,d=False,l=False,p=False,t=False,D=False,m=False,b=False,s=False,B=False):
+def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a=False,Dec=False,l=False,Power=False,t=False,D=False,m=False,b=False,s=False,B=False):
 
     # Based on pearl program from Mike Nolan and Sean Marshall
     
@@ -75,8 +75,8 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
         
     # If no declination is given for an object, we are assuming that the object 
     # possesses the same declination as the latitude of the considered site
-    if not d:
-        d = Lat
+    if not Dec:
+        Dec = Lat
         
     # If no period is provided, assume a default rotation period based on the size of the object
         
@@ -96,7 +96,12 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
         period=Diam2Per[diam]*3600
     else:
         period = PERIOD*3600
-                  
+     
+    # allows the user to override the default transmitter power for the selectred instrument
+             
+    if Power:
+        Instrument['Power'] = Power
+        
     
     radius = diam * 0.5;    
 
