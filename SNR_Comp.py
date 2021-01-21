@@ -52,7 +52,7 @@ System = {'AO leg': {'Tsys'     : 23,
 
 
 
-def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a=False,Dec=False,l=False,Power=False,t=False,D=False,m=False,b=False,s=False,B=False):
+def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a=False,Dec=False,l=False,t=False,Power=False,D=False,m=False,b=False,s=False,B=False):
 
     # Based on pearl program from Mike Nolan and Sean Marshall
     
@@ -82,7 +82,7 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
         
     if not PERIOD:
         Diam2Per = {
-            99999999:5
+            99999999:5,
             5000:4,
             1000:3,
             500:2.5,
@@ -95,17 +95,16 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
             10:0.1,
             0:0.05}
         
-    for elem in Diam2Per.keys():
-        if diam<elem:
-            period = Diam2Per[elem]
-            Out = True
+        for elem in np.sort(Diam2Per.keys())[::-1]:
+            if diam<elem:
+                period = Diam2Per[elem]*3600
     else:
         period = PERIOD*3600
      
     # allows the user to override the default transmitter power for the selectred instrument
              
-    if Power:
-        Instrument['Power'] = Power
+    # if Power:
+    #     Instrument['Power'] = Power
         
         
     #test
@@ -201,29 +200,30 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
 
     
     if Instrument['Type'] == 'Single':
-        Ae = Instrument['Gain']*KJy 
+        Ae_t = Instrument['Gain']*KJy 
+        Ae_r = Ae_t
         # Diameters of the dish (in meters)
         DA   = Instrument['Diameter'] 
     if Instrument['Type'] == 'Array':
         N_Dishes = Instrument['N Dishes']
         D_Dishes = Instrument['D Dishes']
         ap_eff = Instrument['Eff Dishes']
-        DA = np.sqrt((D_Dishes/2)**2*N_Dishes**2)
-        Ae = 0.25 * np.pi * DA**2 * ap_eff
+        # DA = np.sqrt((D_Dishes/2)**2*N_Dishes**2)
+        Ae_t = 0.25 * np.pi * D_Dishes**2 * ap_eff * N_Dishes**2 
+        Ae_r = 0.25 * np.pi * D_Dishes**2 * ap_eff * N_Dishes 
+        
+        
+        # Ae = 0.25 * np.pi * DA**2 * ap_eff
 
     Lat = Latitude[Site]
         
-    if (abs(d - Lat) > AO_ZA_max):
-        quit("ERROR: Declination is beyond Arecibo's limits\n")
 
-
-    Lat = Latitude[Site]
     # From http://star-www.st-and.ac.uk/~fv/webnotes/chapter7.htm
     #   sin(altitude) = cos(ZA) = sin(delta)*sin(latitude) + cos(delta)*cos(latitude)*cos(H)
     #   cos(delta)*cos(lat)*cos(H) = cos(ZA) - sin(delta)*sin(lat)
     #   cos(H) = [cos(ZA) - sin(delta)*sin(lat)]/[cos(delta)*cos(lat)]
     #   Range of hour angles: 2*arccos[[cos(ZA) - sin(delta)*sin(lat)]/[cos(delta)*cos(lat)]]
-    HArange = np.arccos((np.cos(AO_ZA_max*deg) - np.sin(d*deg)*np.sin(Lat*deg)) / (np.cos(d*deg)*np.cos(Lat*deg)))
+    HArange = np.arccos((np.cos(ZA_max*deg) - np.sin(Dec*deg)*np.sin(Lat*deg)) / (np.cos(Dec*deg)*np.cos(Lat*deg)))
     #   Half-range of hour angles, in radians
     ttime = (HArange/PI)*sdd
    	# Note that this does NOT account for the minimum zenith angle of 1.06 deg (keyhole)
@@ -235,11 +235,14 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
     Tsys = Instrument['Tsys'] # S-narrow, http://www.naic.edu/~astro/RXstatus/rcvrtabz.shtml
     
     
-    if p:
+    if Power:
     	#print "Setting transmitter power to $opt_p kW\n";
-    	Pt = p*1000.0 # Convert from kW to W
+    	Pt = Power*1000.0 # Convert from kW to W
     else:
-        Pt = Instrument['Power']
+        Pt = Instrument['Power']*1000.0
+    
+    
+    print(Pt)
     
     xsec = alb * PI * radius**2
     
@@ -251,7 +254,9 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
     #      = (P_tx*A_tx*A_rx*alb*radius^2)/(4*lambda^2*Delta^4)
     # 4*pi*A_e = G*lambda^2; G_tx = 4*pi*A_tx/lambda^2
 
-    Pr = Pt* Ae**2 * alb*radius**2 / (4 * Lambda**2  * dist**4); # Arecibo S-band monostatic (pre-Maria)
+    
+    Pr = Pt* Ae_t*Ae_r * alb*radius**2 / (4 * Lambda**2  * dist**4); # Arecibo S-band monostatic (pre-Maria)
+ 
     
     if l:
     	bwfac = np.cos(l * deg)
