@@ -82,6 +82,7 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
         
     if not PERIOD:
         Diam2Per = {
+            99999999:5
             5000:4,
             1000:3,
             500:2.5,
@@ -91,9 +92,13 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
             50:0.5,
             40:0.25,
             30:0.15,
-            10:0.1}
+            10:0.1,
+            0:0.05}
         
-        period=Diam2Per[diam]*3600
+    for elem in Diam2Per.keys():
+        if diam<elem:
+            period = Diam2Per[elem]
+            Out = True
     else:
         period = PERIOD*3600
      
