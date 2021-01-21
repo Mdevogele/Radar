@@ -102,6 +102,8 @@ def SNR_Comp(RTT,diam,PERIOD = False, Site = 'AO', Sys = 'AO leg', ZA = False, a
     if Power:
         Instrument['Power'] = Power
         
+        
+    #test
     
     radius = diam * 0.5;    
 
